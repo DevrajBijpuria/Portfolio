@@ -1,0 +1,205 @@
+/* Case-study furniture that Tailwind utilities express badly — the React Flow
+   node states and the terminal/query surfaces. Prefixed `pj-` / scoped under
+   `.crt-flow`, and imported once by ArchitectureFlow. */
+
+/* The Surface underneath supplies the ground; React Flow must not paint over it. */
+.crt-flow .react-flow,
+.crt-flow .react-flow__renderer,
+.crt-flow .react-flow__pane {
+  background: transparent;
+}
+
+.crt-flow .react-flow__node {
+  cursor: default;
+}
+
+/* ---- pipeline node ---- */
+
+.crt-flow-node {
+  padding: 10px 12px;
+  border: 1px solid rgba(184, 177, 165, 0.17);
+  border-radius: 4px;
+  background: linear-gradient(163deg, #1e1d1a 0%, #171614 55%, #121110 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.44), inset 0 0 22px rgba(0, 0, 0, 0.35);
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+/* Hover, keyboard focus and selection are the same state — on a diagram they
+   mean the same thing, so they should not look different. */
+.crt-flow-node:hover,
+.crt-flow-node:focus-visible,
+.crt-flow-node[data-selected] {
+  border-color: rgba(168, 174, 245, 0.5);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 18px -8px rgba(168, 174, 245, 0.55),
+    inset 0 0 22px rgba(0, 0, 0, 0.3);
+}
+
+.crt-flow-node:focus-visible {
+  outline: 1px dotted rgba(236, 229, 212, 0.7);
+  outline-offset: 2px;
+}
+
+.crt-flow-node__symbol {
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1.1;
+  color: rgba(168, 174, 245, 0.75);
+}
+
+/* The one-line purpose appears on hover/focus/selection. Its height is always
+   reserved, so the node never resizes and React Flow never has to re-measure
+   the edges underneath it. */
+.crt-flow-node__purpose {
+  min-height: 1.4em;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.crt-flow-node:hover .crt-flow-node__purpose,
+.crt-flow-node:focus-visible .crt-flow-node__purpose,
+.crt-flow-node[data-selected] .crt-flow-node__purpose {
+  opacity: 1;
+}
+
+/* ---- terminal / query surfaces ---- */
+
+.pj-terminal {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre;
+  color: #cfc8b4;
+}
+
+/* Scan-line wash over the query-result window, at a fraction of the CRT's own
+   strength — enough to tint it, never enough to fight the text. */
+.pj-scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-flow-node,
+  .crt-flow-node__purpose {
+    transition: none;
+  }
+}
+
+/* Stage index printed on the node — dim until the node is the live one, so the
+   numbering reads as a fine print marking rather than a label competing with
+   the name. */
+.crt-flow-node__index {
+  color: rgba(184, 177, 165, 0.45);
+  transition: color 180ms ease;
+}
+
+.crt-flow-node:hover .crt-flow-node__index,
+.crt-flow-node:focus-visible .crt-flow-node__index,
+.crt-flow-node[data-selected] .crt-flow-node__index {
+  color: rgba(174, 182, 255, 0.9);
+}
+
+/* ---- page ground ---- */
+
+/* A faint drafting grid with a heavier line every fifth cell, printed behind the
+   whole case study so the sections sit on one sheet instead of floating. Fixed,
+   so it does not travel with the scroll. */
+.pj-ground {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(184, 177, 165, 0.05) 0 1px, transparent 1px 120px),
+    repeating-linear-gradient(90deg, rgba(184, 177, 165, 0.05) 0 1px, transparent 1px 120px),
+    repeating-linear-gradient(0deg, rgba(184, 177, 165, 0.022) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(90deg, rgba(184, 177, 165, 0.022) 0 1px, transparent 1px 24px);
+  /* fades out down the page so the reading column is never fighting it */
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.25) 70%, transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-flow-node__index {
+    transition: none;
+  }
+}
+
+/* ---- system readout ---- */
+
+/* The CRT desktop's status readout, redrawn for the case-study sheet: muted
+   engineering ink, no phosphor glow, no scanlines. Top-right, fixed, behind the
+   content, and only on wide screens where the reading column leaves room. */
+.pj-readout {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: -1;
+  display: none;
+  text-align: right;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 9px;
+  line-height: 1.7;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(184, 177, 165, 0.28);
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .pj-readout {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0 12px;
+    justify-content: end;
+  }
+}
+
+.pj-readout__head {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
+  color: rgba(174, 182, 255, 0.45);
+}
+
+.pj-readout > div {
+  display: contents;
+}
+
+.pj-readout dt {
+  text-align: left;
+  opacity: 0.7;
+}
+
+.pj-readout dd {
+  margin: 0;
+  color: rgba(184, 177, 165, 0.42);
+}
+
+/* The one lit pixel — the same tell the desktop uses to say the tube is warm. */
+.pj-readout__led {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 5px;
+  vertical-align: 0.5px;
+  border-radius: 50%;
+  background: rgba(174, 182, 255, 0.7);
+  box-shadow: 0 0 5px rgba(174, 182, 255, 0.6);
+  animation: pj-readout-pulse 3.2s ease-in-out infinite;
+}
+
+@keyframes pj-readout-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pj-readout__led {
+    animation: none;
+  }
+}

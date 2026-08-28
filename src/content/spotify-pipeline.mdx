@@ -1,0 +1,4 @@
+A fully serverless AWS pipeline for Spotify listening data. EventBridge triggers a
+Lambda extractor, raw JSON lands in **S3**, a **Glue** job catalogs and curates it
+to partitioned Parquet, and **Athena** queries it directly — nothing to run, cost
+scales to zero when idle, and partition pruning keeps queries fast.

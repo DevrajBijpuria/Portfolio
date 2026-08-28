@@ -1,0 +1,45 @@
+import { PipelineDiagram } from "@/components/pipeline-diagram";
+import { MetricsChart } from "@/components/metrics-chart";
+import { nodes, edges } from "./diagram";
+import metrics from "./metrics.json";
+
+# Spotify Data Pipeline
+
+A fully serverless AWS pipeline that pulls my Spotify listening history, curates it
+into a partitioned S3 lake, and makes it queryable in Athena — no servers, pay only
+for what runs.
+
+## Architecture
+
+Click any stage to see what it does.
+
+<PipelineDiagram nodes={nodes} edges={edges} />
+
+## How it works
+
+- **Serverless end to end.** EventBridge → Lambda → S3 → Glue → Athena. Nothing to
+  patch or keep running; cost scales to zero when idle.
+- **Raw and curated zones.** Raw JSON is preserved for replay; the curated zone stores
+  Parquet partitioned by date so Athena scans only what it needs.
+- **Schema on read.** Glue crawls and catalogs the data, so new fields from the Spotify
+  API surface without breaking existing queries.
+
+## Results
+
+Daily extraction volume tracks listening activity, and Athena query latency stays low
+thanks to Parquet + date partitioning.
+
+<MetricsChart
+  title="Daily tracks extracted"
+  data={metrics}
+  xKey="date"
+  type="bar"
+  series={[{ key: "tracks", label: "Tracks extracted" }]}
+/>
+
+<MetricsChart
+  title="Athena query latency (ms)"
+  data={metrics}
+  xKey="date"
+  series={[{ key: "latencyMs", label: "Query latency (ms)" }]}
+/>

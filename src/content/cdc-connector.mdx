@@ -1,0 +1,4 @@
+Log-based change data capture from an operational Postgres into a versioned
+analytics store. Airflow reads the write-ahead log, DuckDB stages and dedupes
+in-process, and an **SCD Type 2** merge closes the old row and opens a new one on
+every change — so nothing is lost and any point in time is queryable.

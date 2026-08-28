@@ -1,0 +1,40 @@
+import { PipelineDiagram } from "@/components/pipeline-diagram";
+import { MetricsChart } from "@/components/metrics-chart";
+import { nodes, edges } from "./diagram";
+import metrics from "./metrics.json";
+
+# CDC Connector
+
+Change-data-capture from an operational Postgres into a versioned analytics store —
+orchestrated by Airflow, transformed in DuckDB, and kept as full history with
+SCD Type 2. No polling, no lost updates, complete auditability.
+
+## Architecture
+
+Click any stage to see what it does.
+
+<PipelineDiagram nodes={nodes} edges={edges} />
+
+## How it works
+
+- **Log-based capture, not polling.** Postgres logical replication streams the WAL,
+  so every row-level change is captured exactly once with no load on the source tables.
+- **DuckDB as the transform engine.** Staging and the SCD merge run in-process in
+  DuckDB — fast columnar SQL without standing up a warehouse.
+- **SCD Type 2 for full history.** Every change closes the previous version and opens
+  a new one, so downstream consumers can time-travel to any point.
+
+## Results
+
+Steady multi-million-row daily capture, with SCD versions written only when a tracked
+attribute actually changes.
+
+<MetricsChart
+  title="Rows captured vs. SCD Type 2 versions written (daily)"
+  data={metrics}
+  xKey="date"
+  series={[
+    { key: "captured", label: "Rows captured" },
+    { key: "versioned", label: "SCD versions written" },
+  ]}
+/>

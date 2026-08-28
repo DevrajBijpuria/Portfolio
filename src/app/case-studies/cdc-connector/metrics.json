@@ -1,0 +1,16 @@
+[
+  { "date": "Aug 01", "captured": 3810000, "versioned": 42000 },
+  { "date": "Aug 02", "captured": 3920000, "versioned": 45500 },
+  { "date": "Aug 03", "captured": 4010000, "versioned": 39800 },
+  { "date": "Aug 04", "captured": 3760000, "versioned": 51200 },
+  { "date": "Aug 05", "captured": 4180000, "versioned": 48700 },
+  { "date": "Aug 06", "captured": 4260000, "versioned": 53100 },
+  { "date": "Aug 07", "captured": 4090000, "versioned": 46900 },
+  { "date": "Aug 08", "captured": 4310000, "versioned": 55400 },
+  { "date": "Aug 09", "captured": 4420000, "versioned": 58900 },
+  { "date": "Aug 10", "captured": 4155000, "versioned": 49300 },
+  { "date": "Aug 11", "captured": 4380000, "versioned": 61200 },
+  { "date": "Aug 12", "captured": 4510000, "versioned": 57800 },
+  { "date": "Aug 13", "captured": 4240000, "versioned": 52600 },
+  { "date": "Aug 14", "captured": 4470000, "versioned": 60400 }
+]

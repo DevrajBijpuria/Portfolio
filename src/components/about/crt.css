@@ -1,0 +1,1090 @@
+/* Physical CRT — layered gradient/pseudo-element work that Tailwind utilities
+   express badly. Every class is `crt-` prefixed and the file is imported once
+   (by CrtScreen), so it is safe as global CSS.
+
+   Rules of the house: no continuous full-viewport filters, nothing animated but
+   transform/opacity, and the boot-time noise runs for <1s then unmounts. */
+
+/* ---------------- geometry ---------------- */
+
+/* The full-screen stage the computer sits on, and the size container everything
+   below measures against. Container units rather than vh: the padding is taken
+   out for us, so the shell's height budget is exact instead of guessed. */
+.crt-band {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+  padding: 1rem;
+  container-type: size;
+  container-name: crtband;
+}
+
+/* Perspective lives on the stage so Motion keeps sole ownership of the shell's
+   own transform (scale/translate) — the tilt sits on .crt-tilt in between. */
+.crt-stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  perspective: 1600px;
+}
+
+/* Width is the only sizing knob — the 4:3 glass plus ~200px of fixed chrome
+   (bezel, chin, stand, shadow) derive the height from it, so the cqh term caps
+   width by what is left of the row. */
+.crt-shell {
+  width: min(96cqw, 1040px, calc((100cqh - 194px) * 4 / 3));
+}
+
+/* A short row cannot afford the pedestal; drop it and tighten the casing rather
+   than shrink the tube into uselessness. */
+@container crtband (max-height: 490px) {
+  .crt-shell {
+    width: min(96cqw, calc((100cqh - 95px) * 4 / 3));
+  }
+  .crt-case {
+    padding: 8px;
+  }
+  .crt-bezel {
+    padding: 6px;
+  }
+  .crt-chin {
+    padding-top: 6px;
+  }
+}
+
+/* Phone portrait: taller glass so the copy is readable without zooming.
+   Landscape phones keep the 4:3 tube — a 5:6 screen would not fit the height. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .crt-shell {
+    width: min(96cqw, calc((100cqh - 150px) * 5 / 6));
+  }
+}
+
+/* Tablet and below drop the perspective tilt to a front-facing view (spec §10). */
+.crt-tilt {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+@media (min-width: 1024px) {
+  .crt-tilt {
+    transform: rotateX(4deg);
+  }
+}
+
+/* ---------------- the desk ----------------
+   What is lying around the monitor. Edge-anchored by design: the middle stays
+   empty so the tube keeps the centre to itself. Everything here is inert, and
+   sits between the vignette and the machine in DOM order, so the object always
+   occludes it. */
+
+.crt-desk {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1100ms ease 320ms;
+}
+
+.crt-desk[data-shown="true"] {
+  opacity: 1;
+}
+
+.crt-prop {
+  position: absolute;
+  /* Low enough to be noticed second, or not at all on a bright room screen —
+     these are meant to be found, not presented. */
+  opacity: 0.3;
+}
+
+.crt-prop svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* The pieces that run off an edge are drawn a touch fainter still, so the crop
+   reads as distance rather than as something clipped by mistake. */
+.crt-prop--schematic,
+.crt-prop--cable,
+.crt-prop--measure {
+  opacity: 0.22;
+}
+
+/* Under ~1100px the margins either side of the tube stop being margins, so the
+   desk would start colliding with the object. Shed it in two steps: the pieces
+   nearest the middle first, then everything. */
+@media (max-width: 1280px) {
+  .crt-prop--components,
+  .crt-prop--usb,
+  .crt-prop--pencil {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px), (max-height: 620px) {
+  .crt-desk {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-desk {
+    transition: none;
+  }
+}
+
+/* ---------------- casing ---------------- */
+
+/* The light the lit tube throws back into the room. Sits behind the whole
+   object, wider and much softer than the contact shadow, and only appears once
+   the screen is on — an unlit monitor bounces nothing. */
+.crt-ambient {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 132%;
+  height: 128%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(214, 214, 196, 0.09) 0%,
+    rgba(150, 156, 190, 0.045) 38%,
+    rgba(0, 0, 0, 0) 68%
+  );
+  transition: opacity 900ms ease 220ms;
+}
+
+.crt-tilt[data-lit="true"] .crt-ambient {
+  opacity: 1;
+}
+
+.crt-case {
+  position: relative;
+  border-radius: clamp(18px, 2.2vw, 30px);
+  padding: clamp(12px, 2vw, 24px);
+  background: linear-gradient(180deg, #272420 0%, #1a1815 40%, #121110 100%);
+  /* Three shadows doing different jobs: the hard 3px lip is the casing's own
+     thickness, the mid one is contact with the surface, and the wide soft one
+     is the object occluding the room behind it. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.8),
+    0 3px 0 rgba(0, 0, 0, 0.85),
+    0 18px 30px -18px rgba(0, 0, 0, 0.95),
+    0 34px 70px -24px rgba(0, 0, 0, 0.9),
+    0 60px 120px -40px rgba(0, 0, 0, 0.75);
+  transition: box-shadow 900ms ease;
+}
+
+/* Lit, the casing picks up a trace of the screen's own colour along its top
+   edge — the plastic catching the tube. */
+.crt-case[data-lit="true"] {
+  box-shadow:
+    inset 0 1px 0 rgba(236, 229, 212, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.8),
+    0 3px 0 rgba(0, 0, 0, 0.85),
+    0 18px 30px -18px rgba(0, 0, 0, 0.95),
+    0 34px 70px -24px rgba(0, 0, 0, 0.9),
+    0 60px 120px -40px rgba(0, 0, 0, 0.75);
+}
+
+/* Matte plastic grain — a static rasterized noise tile, not a live filter. */
+.crt-case::before,
+.crt-noise,
+.crt-static {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.crt-case::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+/* Recessed bezel the glass sits inside — reads as case thickness. */
+.crt-bezel {
+  position: relative;
+  border-radius: clamp(12px, 1.6vw, 22px);
+  padding: clamp(8px, 1.2vw, 16px);
+  background: linear-gradient(180deg, #151311 0%, #0a0908 100%);
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: box-shadow 900ms ease 120ms;
+}
+
+/* The glass throws light onto the surround it is recessed into. Inset, warm,
+   and weak — this is spill, not a light source. */
+.crt-bezel[data-lit="true"] {
+  box-shadow:
+    inset 0 4px 10px rgba(0, 0, 0, 0.9),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 22px rgba(226, 222, 198, 0.11),
+    inset 0 0 5px rgba(226, 222, 198, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.crt-chin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(8px, 1.1vw, 14px) clamp(4px, 0.8vw, 10px) 0;
+}
+
+/* Speaker/vent slots — pure gradient, no assets. */
+.crt-vents {
+  flex: 1;
+  height: 10px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.55) 0 2px,
+    rgba(255, 255, 255, 0.035) 2px 5px
+  );
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.7);
+}
+
+.crt-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #3b3a34;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8);
+  transition: background 400ms ease, box-shadow 400ms ease;
+}
+
+.crt-led[data-on="true"] {
+  background: #b9c0f7;
+  box-shadow: 0 0 10px 1px rgba(168, 174, 245, 0.65);
+}
+
+.crt-stand {
+  margin: 0 auto;
+  width: 24%;
+  height: clamp(10px, 1.4vw, 18px);
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(180deg, #1a1714 0%, #0d0c0b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.crt-foot {
+  margin: 0 auto;
+  width: 40%;
+  height: clamp(6px, 0.9vw, 11px);
+  border-radius: 3px 3px 6px 6px;
+  background: linear-gradient(180deg, #171512 0%, #0a0a09 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Contact shadow (gradient, not a blur filter). Two ellipses: a tight, dark
+   core where the foot actually meets the surface, and a wide soft one for the
+   body of the object above it. */
+.crt-shadow {
+  position: relative;
+  margin: 6px auto 0;
+  width: 88%;
+  height: clamp(18px, 3vw, 34px);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 74%);
+}
+
+.crt-shadow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 42%;
+  height: 55%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0) 76%);
+}
+
+/* ---------------- glass ---------------- */
+
+.crt-screen {
+  position: relative;
+  overflow: hidden;
+  container-type: size;
+  container-name: crtscreen;
+  aspect-ratio: 4 / 3;
+  /* Two-radius corners read as barrel curvature without a filter. */
+  border-radius: 5% / 7%;
+  background: radial-gradient(ellipse at 50% 38%, #14160f 0%, #0c0d09 58%, #060705 100%);
+  transition: box-shadow 700ms ease;
+}
+
+@media (max-width: 640px) and (orientation: portrait) {
+  .crt-screen {
+    aspect-ratio: 5 / 6;
+    border-radius: 6% / 5%;
+  }
+}
+
+/* Warming: the tube is drawing but the picture has not arrived. A fraction of
+   the lit glow, so the illumination rises through the power-on instead of
+   appearing all at once when the desktop mounts. Declared before the lit rule,
+   which therefore wins once the screen is live. */
+.crt-screen[data-warm="true"] {
+  box-shadow:
+    inset 0 0 50px rgba(233, 227, 210, 0.03),
+    0 0 30px -16px rgba(233, 227, 210, 0.09);
+}
+
+/* Screen glow only once the tube is lit. The inset pair is the phosphor bloom
+   (a wide wash plus a tighter core); the outer pair is what the glass throws
+   past its own edge. */
+.crt-screen[data-lit="true"] {
+  box-shadow:
+    inset 0 0 70px rgba(233, 227, 210, 0.055),
+    inset 0 0 26px rgba(233, 227, 210, 0.045),
+    0 0 46px -14px rgba(233, 227, 210, 0.16),
+    0 0 90px -30px rgba(196, 203, 232, 0.2);
+}
+
+/* Every effect layer is inert so the About text stays selectable through it. */
+.crt-scanlines,
+.crt-noise,
+.crt-vignette,
+.crt-glass,
+.crt-converge,
+.crt-breathe,
+.crt-boot,
+.crt-line,
+.crt-static {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.crt-scanlines {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.45) 0px,
+    rgba(0, 0, 0, 0.45) 1px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0) 3px
+  );
+  opacity: 0;
+  transition: opacity 600ms ease 120ms;
+}
+
+.crt-screen[data-warm="true"] .crt-scanlines {
+  opacity: 0.3;
+}
+
+.crt-screen[data-lit="true"] .crt-scanlines {
+  opacity: 0.55;
+}
+
+.crt-noise {
+  opacity: 0.035;
+}
+
+.crt-vignette {
+  background: radial-gradient(ellipse at 50% 46%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.62) 100%);
+}
+
+/* Two reflections on the glass: the soft specular pool near the top-left, and
+   a long low-angle sheen raking across it. Both stay under 6% — the moment a
+   reflection is legible as a shape it stops reading as glass.
+
+   The inset shadows are the curvature: heavier on the left and right than top
+   and bottom, so the picture appears to bend away at the sides the way a real
+   tube's does. */
+.crt-glass {
+  background:
+    radial-gradient(
+      ellipse 55% 40% at 26% 10%,
+      rgba(255, 255, 255, 0.055) 0%,
+      rgba(255, 255, 255, 0) 60%
+    ),
+    linear-gradient(
+      104deg,
+      rgba(255, 255, 255, 0) 34%,
+      rgba(255, 255, 255, 0.028) 46%,
+      rgba(255, 255, 255, 0.045) 50%,
+      rgba(255, 255, 255, 0.022) 54%,
+      rgba(255, 255, 255, 0) 66%
+    );
+  box-shadow:
+    inset 0 0 26px rgba(0, 0, 0, 0.55),
+    inset 26px 0 34px -26px rgba(0, 0, 0, 0.85),
+    inset -26px 0 34px -26px rgba(0, 0, 0, 0.85),
+    inset 0 18px 26px -20px rgba(0, 0, 0, 0.6),
+    inset 0 -18px 26px -20px rgba(0, 0, 0, 0.6);
+}
+
+/* Misconvergence: the guns falling out of alignment at the extreme edges, red
+   pulling one way and blue the other. Static, edge-only, and barely there — a
+   moving or full-screen fringe is a glitch effect, which is the wrong century.
+   Screen blending keeps it a tint lifting off the picture rather than a film
+   laid over it. */
+.crt-converge {
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 700ms ease 200ms;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 60, 60, 0.05) 0%,
+      rgba(255, 60, 60, 0) 4.5%,
+      rgba(0, 0, 0, 0) 95.5%,
+      rgba(60, 120, 255, 0.05) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(60, 120, 255, 0.035) 0%,
+      rgba(60, 120, 255, 0) 2.5%,
+      rgba(0, 0, 0, 0) 97.5%,
+      rgba(255, 60, 60, 0.035) 100%
+    );
+}
+
+.crt-screen[data-lit="true"] .crt-converge {
+  opacity: 1;
+}
+
+/* Tiny, continuous brightness fluctuation — the tube never sitting perfectly
+   still. Amplitude is deliberately under what you can point at; it is the
+   difference between a screenshot and a running machine. The rare hard blink
+   is .crt-flicker's job and stays separate. */
+.crt-breathe {
+  background: rgba(236, 229, 212, 0.028);
+  opacity: 0;
+  animation: crt-breathe 5.6s ease-in-out infinite;
+}
+
+@keyframes crt-breathe {
+  0%, 100% { opacity: 0.15; }
+  23% { opacity: 0.62; }
+  41% { opacity: 0.28; }
+  58% { opacity: 0.8; }
+  76% { opacity: 0.34; }
+}
+
+.crt-content {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(16px, 2.6vw, 38px);
+  color: #ece5d4;
+}
+
+.crt-content::-webkit-scrollbar {
+  width: 6px;
+}
+.crt-content::-webkit-scrollbar-thumb {
+  background: rgba(236, 229, 212, 0.18);
+  border-radius: 3px;
+}
+
+/* ---------------- power-on ---------------- */
+
+/* Both boot layers unmount when `powering` ends, so nothing animates at rest.
+
+   The old version scaled a near-opaque cream plate up to fill the glass, which
+   meant the tube spent a beat as a blank white rectangle — indistinguishable
+   from a failed load. This one never paints a solid field at all:
+
+     dark  →  a hot filament line at the centre line
+           →  the line opens to full width
+           →  it blooms open vertically as a DIM phosphor wash, not a white one
+           →  the wash falls away while the tube's own glow rises underneath
+
+   Peak opacity is 0.34, and the gradient is brightest at the centre and dark at
+   the edges, because a tube warming up does not illuminate evenly. */
+.crt-boot {
+  transform-origin: center;
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 50%,
+    rgba(226, 231, 208, 0.62) 0%,
+    rgba(198, 208, 180, 0.3) 42%,
+    rgba(120, 132, 108, 0.08) 78%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  animation: crt-boot 700ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes crt-boot {
+  /* the filament: a hard line, barely any width */
+  0% { opacity: 1; transform: scaleY(0.004) scaleX(0.55); }
+  14% { opacity: 1; transform: scaleY(0.004) scaleX(1); }
+  /* it holds as a line for a moment before it opens */
+  24% { opacity: 0.95; transform: scaleY(0.012) scaleX(1); }
+  /* bloom open — dim, never a white plate */
+  40% { opacity: 0.34; transform: scaleY(1) scaleX(1); }
+  /* the tube settling: two soft surges, well under the old flash */
+  56% { opacity: 0.2; }
+  70% { opacity: 0.3; }
+  84% { opacity: 0.12; }
+  100% { opacity: 0; transform: scaleY(1) scaleX(1); }
+}
+
+/* The horizontal line itself, drawn separately so it can stay hard-edged while
+   the wash behind it blooms. One element, three lives: hot dot, full-width
+   filament, then gone as the picture takes over. */
+.crt-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(236, 240, 220, 0) 0%,
+    rgba(240, 244, 226, 0.95) 18%,
+    rgba(255, 255, 255, 1) 50%,
+    rgba(240, 244, 226, 0.95) 82%,
+    rgba(236, 240, 220, 0) 100%
+  );
+  box-shadow: 0 0 12px 1px rgba(226, 231, 208, 0.55);
+  animation: crt-line 700ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes crt-line {
+  0% { opacity: 1; transform: scaleX(0.5) scaleY(1); }
+  14% { opacity: 1; transform: scaleX(1) scaleY(1); }
+  26% { opacity: 0.9; transform: scaleX(1) scaleY(1.6); }
+  46% { opacity: 0.35; transform: scaleX(1) scaleY(0.6); }
+  70%, 100% { opacity: 0; transform: scaleX(1) scaleY(0.4); }
+}
+
+.crt-static {
+  opacity: 0;
+  animation: crt-static 560ms steps(1, end) forwards;
+}
+
+@keyframes crt-static {
+  0% { opacity: 0.26; background-position: 0 0; }
+  20% { opacity: 0.2; background-position: 40px 24px; }
+  40% { opacity: 0.24; background-position: -32px 60px; }
+  60% { opacity: 0.12; background-position: 70px -40px; }
+  80% { opacity: 0.15; background-position: -60px -18px; }
+  100% { opacity: 0; background-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-boot,
+  .crt-line,
+  .crt-static {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ---------------- teardown ----------------
+   Keyed on the glass itself, not the viewport: the computer is sized by its
+   accordion row now, so a wide screen can still hand it a small tube. Hide the
+   pedestal before the tube, and the working files before the shell. */
+
+@container crtband (max-height: 490px) {
+  .crt-stand,
+  .crt-foot,
+  .crt-shadow {
+    display: none;
+  }
+}
+
+/* ---------------- desktop chrome ----------------
+   The skills screen is a desktop, so it runs edge to edge inside the glass
+   instead of the padded document layout a plain file window uses. */
+
+.crt-content--desktop {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Icons fill a column top-to-bottom then wrap into the next one — the way a
+   real desktop arranges them. One rule, because the desktop area has a definite
+   height for auto-fill to divide up.
+
+   Sized from the glass, not the viewport: on a vw basis a small tube kept
+   full-size cells, the groups wrapped into extra columns, and the second column
+   ran in under the terminal. */
+.crt-icons {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(auto-fill, clamp(50px, 14cqh, 72px));
+  grid-auto-columns: clamp(58px, 14cqw, 80px);
+  justify-content: start;
+  align-content: start;
+  height: 100%;
+  column-gap: clamp(2px, 1.2cqw, 10px);
+}
+
+/* Beveled edges — the one detail that makes a control read as a chrome widget
+   from this era rather than a flat rectangle. */
+.crt-raise {
+  border: 1px solid;
+  border-color: rgba(236, 229, 212, 0.3) rgba(0, 0, 0, 0.75) rgba(0, 0, 0, 0.75)
+    rgba(236, 229, 212, 0.3);
+}
+
+.crt-raise:active {
+  border-color: rgba(0, 0, 0, 0.75) rgba(236, 229, 212, 0.3) rgba(236, 229, 212, 0.3)
+    rgba(0, 0, 0, 0.75);
+}
+
+.crt-sink {
+  border: 1px solid;
+  border-color: rgba(0, 0, 0, 0.75) rgba(236, 229, 212, 0.24) rgba(236, 229, 212, 0.24)
+    rgba(0, 0, 0, 0.75);
+}
+
+.crt-taskbar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 3px 4px;
+  background: linear-gradient(180deg, #262a1c 0%, #161a10 100%);
+  border-top: 1px solid rgba(236, 229, 212, 0.24);
+}
+
+/* Windows, floated over the desktop with a hard drop shadow. */
+.crt-window {
+  position: absolute;
+  left: 7%;
+  top: 9%;
+  right: 4%;
+  bottom: 3%;
+  display: flex;
+  flex-direction: column;
+  background: #0e1109;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6);
+}
+
+.crt-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 2px 2px 2px 4px;
+  background: #a8aef5;
+  color: #0c0d09;
+}
+
+/* The body is drawn in rather than switched on: a top-to-bottom reveal with a
+   bright line riding its edge, which is what a tube painting a new screen looks
+   like. Keyed on the window title in CrtWindow, so navigating a folder in place
+   redraws too. */
+.crt-window-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 5px;
+  animation: crt-draw 300ms cubic-bezier(0.3, 0.8, 0.4, 1) both;
+}
+
+@keyframes crt-draw {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+.crt-window-body::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(236, 229, 212, 0) 0%,
+    rgba(236, 229, 212, 0.5) 50%,
+    rgba(236, 229, 212, 0) 100%
+  );
+  animation: crt-draw-edge 300ms cubic-bezier(0.3, 0.8, 0.4, 1) both;
+}
+
+@keyframes crt-draw-edge {
+  from { top: 0; opacity: 0.85; }
+  90% { opacity: 0.5; }
+  to { top: 100%; opacity: 0; }
+}
+
+.crt-window-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.crt-window-body::-webkit-scrollbar-thumb {
+  background: rgba(236, 229, 212, 0.18);
+}
+
+/* ---------------- workstation desktop ----------------
+   The desk itself. Objects live in the left third and the two right-hand
+   corners; the black between them is load-bearing, so nothing here grows to
+   fill it. */
+
+.crt-desktop {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(6px, 1.2vw, 14px);
+}
+
+.crt-icon-field {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(2px, 1.5cqw, 12px);
+  height: 100%;
+  min-width: 0;
+}
+
+@keyframes crt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Bloom on the few genuinely bright glyphs — not a page-wide glow. */
+.crt-bloom {
+  text-shadow: 0 0 6px rgba(236, 229, 212, 0.35);
+}
+
+/* ---- icons ---- */
+
+.crt-desktop-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Selection brackets: the corner ticks a file manager of this vintage drew
+   around whatever the cursor was over. They are the answer to "is this
+   clickable" — nothing else on the desk grows corners. */
+.crt-desktop-icon::before,
+.crt-desktop-icon::after {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.crt-desktop-icon::before {
+  top: 1px;
+  left: 1px;
+  border-top: 1px solid #a8aef5;
+  border-left: 1px solid #a8aef5;
+}
+
+.crt-desktop-icon::after {
+  right: 1px;
+  bottom: 1px;
+  border-right: 1px solid #a8aef5;
+  border-bottom: 1px solid #a8aef5;
+}
+
+.crt-desktop-icon:hover::before,
+.crt-desktop-icon:hover::after,
+.crt-desktop-icon:focus-visible::before,
+.crt-desktop-icon:focus-visible::after,
+.crt-desktop-icon[data-highlighted]::before,
+.crt-desktop-icon[data-highlighted]::after {
+  opacity: 1;
+}
+
+.crt-desktop-icon svg {
+  opacity: 0.88;
+  transition: opacity 140ms ease;
+}
+
+.crt-desktop-icon__label {
+  color: #cfc8b4;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+/* Hover, keyboard focus and the boot's attract state all render as the same
+   selection, because on a real desktop they are the same thing. */
+/* The art brightens, and blips once as it does — a tube reacting to a change
+   on screen rather than a CSS transition easing politely. */
+.crt-desktop-icon:hover svg,
+.crt-desktop-icon:focus-visible svg,
+.crt-desktop-icon[data-highlighted] svg {
+  opacity: 1;
+  filter: brightness(1.22);
+}
+
+.crt-desktop-icon:hover svg,
+.crt-desktop-icon:focus-visible svg {
+  animation: crt-blip 260ms steps(1, end) 1;
+}
+
+/* Two frames of over-brightness, then settle. Short enough to register as the
+   phosphor catching up, not as a flash. */
+@keyframes crt-blip {
+  0% { filter: brightness(1.75); }
+  16% { filter: brightness(1.05); }
+  30% { filter: brightness(1.5); }
+  46%, 100% { filter: brightness(1.22); }
+}
+
+.crt-desktop-icon:hover .crt-desktop-icon__label,
+.crt-desktop-icon:focus-visible .crt-desktop-icon__label,
+.crt-desktop-icon[data-highlighted] .crt-desktop-icon__label {
+  background: #a8aef5;
+  color: #0c0d09;
+}
+
+.crt-desktop-icon:focus-visible .crt-desktop-icon__label,
+.crt-desktop-icon[data-highlighted] .crt-desktop-icon__label {
+  outline: 1px dotted #ece5d4;
+}
+
+.crt-desktop-icon:hover,
+.crt-desktop-icon:focus-visible,
+.crt-desktop-icon[data-highlighted] {
+  background: rgba(168, 174, 245, 0.08);
+}
+
+/* ---- system readout ---- */
+
+.crt-status-readout {
+  position: absolute;
+  top: clamp(8px, 3%, 22px);
+  right: clamp(8px, 2.5%, 24px);
+  text-align: right;
+  font-size: clamp(7px, 1.5cqw, 9px);
+  line-height: 1.55;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7e8878;
+  animation: crt-fade-in 520ms ease both;
+}
+
+.crt-status-readout__head {
+  margin-bottom: 3px;
+  color: #9aa392;
+}
+
+.crt-status-readout dl {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0 10px;
+  justify-content: end;
+}
+
+.crt-status-readout dl > div {
+  display: contents;
+}
+
+.crt-status-readout dt {
+  text-align: left;
+  opacity: 0.72;
+}
+
+.crt-status-readout dd {
+  text-align: right;
+  margin: 0;
+}
+
+.crt-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  vertical-align: -0.12em;
+  background: #cfd6c4;
+  animation: crt-caret 1.08s steps(1, end) infinite;
+}
+
+@keyframes crt-caret {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+
+/* ---- pointer ---- */
+
+.crt-pointer {
+  position: absolute;
+  left: 56%;
+  top: 30%;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.85));
+  transition: transform 820ms cubic-bezier(0.33, 0, 0.18, 1), opacity 260ms ease;
+}
+
+.crt-pointer[data-visible="true"] {
+  opacity: 0.92;
+}
+
+/* ---- window bodies ---- */
+
+.crt-window--wide {
+  left: 4%;
+  top: 5%;
+  right: 3%;
+  bottom: 3%;
+}
+
+.crt-file-body {
+  margin: 0;
+  white-space: pre;
+  font-size: clamp(9px, 1.05vw, 12px);
+  line-height: 1.55;
+  color: #cfc8b4;
+}
+
+.crt-row-label {
+  color: #d8d1bf;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+/* Rows are buttons, and a button's default cursor says nothing. */
+.crt-window-body button,
+.crt-window-body a {
+  cursor: pointer;
+}
+
+.group:hover > .crt-row-label,
+.group:focus-visible > .crt-row-label {
+  background: #a8aef5;
+  color: #0c0d09;
+}
+
+/* A caret runs out to meet the row under the cursor. It occupies its space at
+   rest so nothing reflows when it appears. */
+.crt-window-body .group > svg,
+.crt-window-body .group > span:first-child {
+  position: relative;
+}
+
+.crt-window-body .group::before {
+  content: "›";
+  flex: 0 0 auto;
+  width: 0.62em;
+  margin-left: -0.1em;
+  color: #a8aef5;
+  opacity: 0;
+  transform: translateX(-3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.crt-window-body .group:hover::before,
+.crt-window-body .group:focus-visible::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.crt-window-body .group:hover svg,
+.crt-window-body .group:focus-visible svg {
+  filter: brightness(1.25);
+}
+
+/* ---------------- tube atmosphere ----------------
+   Noticed second, after the desktop. All opacity/transform, all on long
+   periods, so nothing here is ever busy. */
+
+.crt-flicker,
+.crt-warp,
+.crt-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* a single faint brightening, roughly once every seven seconds */
+.crt-flicker {
+  background: rgba(236, 229, 212, 0.03);
+  opacity: 0;
+  animation: crt-flicker 7.4s steps(1, end) infinite;
+}
+
+@keyframes crt-flicker {
+  0%, 95.6% { opacity: 0; }
+  95.9% { opacity: 1; }
+  96.3% { opacity: 0; }
+  96.9% { opacity: 0.7; }
+  97.3%, 100% { opacity: 0; }
+}
+
+/* an occasional band drifting down the tube — the old horizontal-hold wobble */
+.crt-warp {
+  background: linear-gradient(
+    180deg,
+    transparent 0 6%,
+    rgba(236, 229, 212, 0.05) 6% 9%,
+    transparent 9%
+  );
+  opacity: 0;
+  animation: crt-warp 13s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes crt-warp {
+  0%, 86% { opacity: 0; transform: translateY(-8%); }
+  88% { opacity: 0.75; }
+  99% { opacity: 0.4; transform: translateY(92%); }
+  100% { opacity: 0; transform: translateY(96%); }
+}
+
+/* boot: one line sweeps the tube before it illuminates */
+.crt-sweep {
+  background: linear-gradient(
+    180deg,
+    rgba(240, 236, 224, 0.9) 0 0.6%,
+    rgba(240, 236, 224, 0.22) 0.6% 1.8%,
+    transparent 1.8%
+  );
+  animation: crt-sweep 540ms ease-in forwards;
+}
+
+@keyframes crt-sweep {
+  from { transform: translateY(-2%); opacity: 0.95; }
+  to { transform: translateY(99%); opacity: 0; }
+}
+
+/* ---------------- desktop teardown ----------------
+   Last in the file, after every rule it overrides. Each icon group auto-fills
+   into extra columns when its rows stop fitting, so on a small tube the groups
+   would push past the right edge — drop the working files rather than let
+   anything clip. */
+
+@container crtscreen (max-height: 400px) {
+  .crt-icons--data {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-window-body::after {
+    display: none;
+  }
+
+  .crt-window-body,
+  .crt-desktop-icon:hover svg,
+  .crt-desktop-icon:focus-visible svg,
+  .crt-breathe,
+  .crt-flicker,
+  .crt-warp,
+  .crt-sweep,
+  .crt-caret {
+    animation: none;
+  }
+  .crt-flicker,
+  .crt-warp,
+  .crt-sweep {
+    opacity: 0;
+  }
+  .crt-pointer {
+    transition: none;
+  }
+}

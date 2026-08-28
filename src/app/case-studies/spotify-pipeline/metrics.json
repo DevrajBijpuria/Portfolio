@@ -1,0 +1,16 @@
+[
+  { "date": "Aug 01", "tracks": 312, "latencyMs": 1840 },
+  { "date": "Aug 02", "tracks": 287, "latencyMs": 1760 },
+  { "date": "Aug 03", "tracks": 341, "latencyMs": 1920 },
+  { "date": "Aug 04", "tracks": 298, "latencyMs": 1680 },
+  { "date": "Aug 05", "tracks": 356, "latencyMs": 1580 },
+  { "date": "Aug 06", "tracks": 402, "latencyMs": 1490 },
+  { "date": "Aug 07", "tracks": 378, "latencyMs": 1620 },
+  { "date": "Aug 08", "tracks": 415, "latencyMs": 1450 },
+  { "date": "Aug 09", "tracks": 389, "latencyMs": 1710 },
+  { "date": "Aug 10", "tracks": 333, "latencyMs": 1530 },
+  { "date": "Aug 11", "tracks": 361, "latencyMs": 1390 },
+  { "date": "Aug 12", "tracks": 424, "latencyMs": 1470 },
+  { "date": "Aug 13", "tracks": 398, "latencyMs": 1350 },
+  { "date": "Aug 14", "tracks": 371, "latencyMs": 1420 }
+]
