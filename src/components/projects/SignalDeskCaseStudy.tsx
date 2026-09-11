@@ -157,31 +157,27 @@ const northStar = {
 
 const metricGroups = [
   {
-    group: "Primary product metrics",
+    group: "Primary metrics",
     items: [
       { name: "Story engagement", decision: "Are readers actually reading, or scrolling past?" },
-      { name: "Context interaction rate", decision: "Do readers use the trust / context layer at all?" },
-      { name: "Stories explored per session", decision: "Is the desk broadening what a reader sees?" },
-      { name: "Reading completion", decision: "Are stories surfaced at the right depth and length?" },
-      { name: "Source comparison rate", decision: "Do readers value seeing many outlets on one story?" },
+      { name: "Context usage", decision: "Do readers use the trust / context layer at all?" },
+      { name: "Discovery", decision: "Is the desk broadening what a reader sees beyond one outlet?" },
     ],
   },
   {
-    group: "Trust & quality metrics",
+    group: "Trust / quality",
     items: [
-      { name: "Credibility-signal interaction", decision: "Is the legitimacy signal noticed and used?" },
-      { name: "Source inspection rate", decision: "Do readers open the underlying sources when offered?" },
-      { name: "User-reported trust", decision: "Does the desk make readers feel more confident? (survey)" },
-      { name: "Duplicate-story rate", decision: "Is the deduplication layer keeping the edition clean?" },
+      { name: "Credibility interaction", decision: "Is the legitimacy signal noticed and used?" },
+      { name: "Source inspection", decision: "Do readers open the underlying sources when offered?" },
+      { name: "Duplicate story rate", decision: "Is the deduplication layer keeping the edition clean?" },
     ],
   },
   {
-    group: "Guardrail metrics",
+    group: "Guardrails",
     items: [
-      { name: "Misleading-story reports", decision: "Is scoring ever surfacing something it should not trust?" },
-      { name: "Sentiment misinterpretation", decision: "Are readers mistaking public reaction for fact?" },
       { name: "Bounce rate", decision: "Is the front page failing to earn a first read?" },
-      { name: "Low-quality source engagement", decision: "Is attention drifting to low-tier sources?" },
+      { name: "Misleading story reports", decision: "Is scoring ever surfacing something it should not trust?" },
+      { name: "Sentiment misinterpretation", decision: "Are readers mistaking public reaction for fact?" },
     ],
   },
 ];
@@ -276,36 +272,15 @@ const prd = {
   ],
 };
 
-// ---- prioritization: Impact × Effort. Current product judgment, not validated. ----
-const priorityQuadrants = [
-  {
-    impact: "High impact",
-    effort: "Low effort",
-    heading: "Do first",
-    accent: true,
-    items: ["Improve credibility signals", "Improve public-reaction matching"],
-  },
-  {
-    impact: "High impact",
-    effort: "High effort",
-    heading: "Plan & scope",
-    accent: false,
-    items: ["Expand source coverage", "Personalization"],
-  },
-  {
-    impact: "Lower impact",
-    effort: "Low effort",
-    heading: "Fill-ins",
-    accent: false,
-    items: [],
-  },
-  {
-    impact: "Lower impact",
-    effort: "High effort",
-    heading: "Defer",
-    accent: false,
-    items: ["Historical story context", "Conversational news assistant"],
-  },
+// ---- prioritization: Impact × Effort × Confidence. Current product judgment,
+// not validated by user data. Priority is the resulting call (P0 / P1 / P2). ----
+const priorities = [
+  { initiative: "Improve credibility signals", impact: "High", effort: "Low", confidence: "High", priority: "P0" },
+  { initiative: "Improve public-reaction matching", impact: "Medium", effort: "Low", confidence: "Medium", priority: "P1" },
+  { initiative: "Expand source coverage", impact: "High", effort: "Medium", confidence: "Medium", priority: "P1" },
+  { initiative: "Personalization", impact: "High", effort: "High", confidence: "Low", priority: "P2" },
+  { initiative: "Historical story context", impact: "Medium", effort: "High", confidence: "Low", priority: "P2" },
+  { initiative: "Conversational news assistant", impact: "Medium", effort: "High", confidence: "Low", priority: "P2" },
 ];
 
 // Extra framing for the decisions reused from the technical page, keyed by title.
@@ -513,35 +488,21 @@ export function SignalDeskCaseStudy() {
         </div>
 
         <InView delay={0.06}>
-          <div className="mt-6 grid gap-3 md:grid-cols-[240px_1fr]">
-            <Surface className="px-5 py-5">
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Participants
-                </span>
-                <Hypothesis text="proposed sample" />
-              </div>
-              <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">10–15</p>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                regular digital-news consumers
-              </p>
-            </Surface>
-            <Surface className="px-5 py-5">
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                Interview questions
-              </span>
-              <ol className="mt-3 space-y-1.5">
-                {interviewQuestions.map((q, i) => (
-                  <li key={q} className="flex gap-3 text-sm leading-6 text-muted-foreground">
-                    <span className="font-mono text-[11px] text-primary/70">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span>{q}</span>
-                  </li>
-                ))}
-              </ol>
-            </Surface>
-          </div>
+          <Surface className="mt-6 px-5 py-5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+              Interview questions
+            </span>
+            <ol className="mt-3 grid gap-x-8 gap-y-1.5 sm:grid-cols-2">
+              {interviewQuestions.map((q, i) => (
+                <li key={q} className="flex gap-3 text-sm leading-6 text-muted-foreground">
+                  <span className="font-mono text-[11px] text-primary/70">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span>{q}</span>
+                </li>
+              ))}
+            </ol>
+          </Surface>
         </InView>
 
         <div className={`${PROSE} mt-8`}>
@@ -732,10 +693,10 @@ export function SignalDeskCaseStudy() {
       {/* 10b — a compact PRD for one representative feature */}
       <section>
         <div className={PROSE}>
-          <SectionLabel label="Product requirements" />
+          <SectionLabel label="Feature spec / PRD" />
           <InView>
             <p className="leading-7 text-muted-foreground">
-              One representative feature as a compact PRD, rather than a full spec — the reasoning that
+              One representative feature as a compact spec, rather than a full PRD — the reasoning that
               turns the product thesis into something buildable.
             </p>
           </InView>
@@ -769,7 +730,7 @@ export function SignalDeskCaseStudy() {
               <div className="mt-6 grid gap-x-8 gap-y-6 md:grid-cols-2">
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Functional requirements
+                    Key requirements
                   </p>
                   <ul className="mt-3 space-y-2">
                     {prd.functional.map((f) => (
@@ -795,22 +756,6 @@ export function SignalDeskCaseStudy() {
                     ))}
                   </ul>
                 </div>
-              </div>
-
-              <div className="mt-6 border-t border-border/60 pt-5">
-                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Acceptance criteria
-                </p>
-                <ul className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
-                  {prd.acceptance.map((a) => (
-                    <li key={a} className="flex gap-2.5 text-sm leading-6 text-muted-foreground">
-                      <span aria-hidden className="mt-0.5 shrink-0 font-mono text-xs text-primary/70">
-                        ✓
-                      </span>
-                      <span>{a}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           </Surface>
@@ -1114,83 +1059,66 @@ export function SignalDeskCaseStudy() {
           <SectionLabel label="Prioritization" />
           <InView>
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <Tag>Impact × Effort</Tag>
-              <Hypothesis text="current prioritization hypothesis" />
+              <Tag>Impact × Effort × Confidence</Tag>
+              <Hypothesis text="current prioritization judgment · not validated" />
             </div>
           </InView>
           <InView delay={0.04}>
             <p className="leading-7 text-muted-foreground">
               Product management is not just generating features — it is choosing which ones earn the
-              next unit of effort. This is current product judgment, not a user-validated ranking.
+              next unit of effort. This is my current product judgment, not a ranking validated by user
+              data.
             </p>
           </InView>
         </div>
 
         <InView delay={0.06}>
-          <div className="mt-6">
-            {/* axes + 2x2 matrix */}
-            <div className="grid grid-cols-[auto_1fr] gap-3">
-              <div className="flex items-center">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground [writing-mode:vertical-rl] rotate-180">
-                  Impact →
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {priorityQuadrants.map((q) => (
-                  <Surface
-                    key={q.heading}
-                    className={`min-h-[9rem] px-4 py-5 sm:px-5 ${q.accent ? "border-primary/40" : ""}`}
-                  >
-                    <div className="flex flex-col gap-1">
-                      <span
-                        className={`font-mono text-[10px] uppercase tracking-[0.16em] ${
-                          q.accent ? "text-primary" : "text-muted-foreground"
-                        }`}
-                      >
-                        {q.heading}
-                      </span>
-                      <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-muted-foreground/60">
-                        {q.impact} · {q.effort}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {q.items.length > 0 ? (
-                        q.items.map((it) => (
-                          <span
-                            key={it}
-                            className={`rounded-[3px] border px-2 py-1 text-xs leading-5 ${
-                              q.accent
-                                ? "border-primary/40 text-foreground"
-                                : "border-border/70 text-muted-foreground"
-                            }`}
-                          >
-                            {it}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="font-mono text-[11px] text-muted-foreground/40">—</span>
-                      )}
-                    </div>
-                  </Surface>
-                ))}
-              </div>
-              <div />
-              <div className="text-right">
-                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                  Effort →
-                </span>
-              </div>
+          <Surface grid={false} className="mt-6">
+            {/* header — desktop only */}
+            <div className="hidden gap-4 border-b border-border/70 px-4 py-2.5 md:grid md:grid-cols-[1.7fr_repeat(3,0.8fr)_0.7fr]">
+              {["Initiative", "Impact", "Effort", "Confidence", "Priority"].map((h) => (
+                <Tag key={h}>{h}</Tag>
+              ))}
             </div>
-          </div>
+            {priorities.map((row, i) => (
+              <div
+                key={row.initiative}
+                className={`grid gap-x-4 gap-y-1.5 px-4 py-3.5 md:grid-cols-[1.7fr_repeat(3,0.8fr)_0.7fr] md:items-center ${
+                  i > 0 ? "border-t border-border/40" : ""
+                }`}
+              >
+                <div className="text-sm font-medium text-foreground">{row.initiative}</div>
+                <PriorityStat label="Impact" value={row.impact} />
+                <PriorityStat label="Effort" value={row.effort} />
+                <PriorityStat label="Confidence" value={row.confidence} />
+                <div className="mt-1 md:mt-0">
+                  <span className="mr-2 font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground/70 md:hidden">
+                    Priority
+                  </span>
+                  <span
+                    className={`inline-flex rounded-[3px] border px-2 py-0.5 font-mono text-[11px] tracking-[0.08em] ${
+                      row.priority === "P0"
+                        ? "border-primary/50 text-primary"
+                        : row.priority === "P1"
+                          ? "border-border text-foreground/80"
+                          : "border-border/60 text-muted-foreground/70"
+                    }`}
+                  >
+                    {row.priority}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </Surface>
         </InView>
 
         <div className={`${PROSE} mt-6`}>
           <InView>
             <p className="text-sm leading-6 text-muted-foreground">
-              Credibility and context improvements come first: they sit directly on Signal Desk&rsquo;s
-              core thesis — helping a reader judge a story — while needing far less scope than full
-              personalization or a conversational assistant. This ranking would be revised after user
-              research and usage data.
+              Credibility and context improvements come first (P0): they sit directly on Signal
+              Desk&rsquo;s core thesis — helping a reader judge a story — with high confidence and far
+              less scope than full personalization or a conversational assistant (P2). This ranking
+              would be revised after user research and usage data.
             </p>
           </InView>
         </div>
@@ -1306,6 +1234,19 @@ function Hypothesis({ text = "not validated" }: { text?: string }) {
     <span className="inline-flex items-center rounded-[3px] border border-primary/40 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-primary/80">
       {text}
     </span>
+  );
+}
+
+// One attribute cell in the prioritization table. The label shows only on mobile,
+// where the table collapses from columns into stacked rows.
+function PriorityStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-sm text-muted-foreground">
+      <span className="mr-2 font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground/70 md:hidden">
+        {label}
+      </span>
+      {value}
+    </div>
   );
 }
 
