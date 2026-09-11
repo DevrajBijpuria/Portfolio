@@ -160,23 +160,28 @@ const metricGroups = [
     group: "Primary metrics",
     items: [
       { name: "Story engagement", decision: "Are readers actually reading, or scrolling past?" },
-      { name: "Context usage", decision: "Do readers use the trust / context layer at all?" },
       { name: "Discovery", decision: "Is the desk broadening what a reader sees beyond one outlet?" },
+      { name: "Context usage", decision: "Do readers use the trust / context layer at all?" },
     ],
   },
   {
     group: "Trust / quality",
     items: [
-      { name: "Credibility interaction", decision: "Is the legitimacy signal noticed and used?" },
-      { name: "Source inspection", decision: "Do readers open the underlying sources when offered?" },
-      { name: "Duplicate story rate", decision: "Is the deduplication layer keeping the edition clean?" },
+      { name: "Credibility-signal interaction", decision: "Is the legitimacy signal noticed and used?" },
+      { name: "Duplicate-story rate", decision: "Is the deduplication layer keeping the edition clean?" },
+    ],
+  },
+  {
+    group: "Retention",
+    items: [
+      { name: "Returning readers / repeat sessions", decision: "Does the desk earn a habit past the first visit?" },
     ],
   },
   {
     group: "Guardrails",
     items: [
       { name: "Bounce rate", decision: "Is the front page failing to earn a first read?" },
-      { name: "Misleading story reports", decision: "Is scoring ever surfacing something it should not trust?" },
+      { name: "Misleading-story reports", decision: "Is scoring ever surfacing something it should not trust?" },
       { name: "Sentiment misinterpretation", decision: "Are readers mistaking public reaction for fact?" },
     ],
   },
@@ -246,22 +251,21 @@ const validationRows = [
 const prd = {
   feature: "Story Context",
   userStory:
-    "As a reader, I want to understand the credibility and broader context of a story without leaving the article, so that I can make a more informed judgment.",
+    "As a reader, I want to understand the credibility and broader context of a story without leaving the article, so I can make a more informed judgment.",
   problem:
     "To evaluate a story today, a reader may have to switch between several sources and social platforms. (Product hypothesis — to be validated by research.)",
   functional: [
-    "Display a source-credibility signal on the story.",
-    "Explain why that credibility signal was assigned.",
-    "Show corroborating coverage from other outlets.",
-    "Surface relevant context alongside the story.",
-    "Show public sentiment separately from credibility.",
-    "Let the reader inspect the underlying sources.",
+    "Show the credibility signal.",
+    "Explain why the signal was assigned.",
+    "Show corroborating coverage.",
+    "Show per-source framing.",
+    "Keep public reaction separate from credibility.",
+    "Allow users to inspect the underlying sources.",
   ],
   nonGoals: [
-    "Decide whether a story is absolutely true.",
-    "Use public sentiment as proof of factual accuracy.",
-    "Combine credibility and sentiment into one score.",
-    "Hide source-level information behind an opaque AI score.",
+    "Determine whether a story is objectively true.",
+    "Treat public sentiment as factual evidence.",
+    "Combine credibility, framing and sentiment into one score.",
   ],
   acceptance: [
     "Understandable without technical knowledge.",
@@ -275,12 +279,11 @@ const prd = {
 // ---- prioritization: Impact × Effort × Confidence. Current product judgment,
 // not validated by user data. Priority is the resulting call (P0 / P1 / P2). ----
 const priorities = [
-  { initiative: "Improve credibility signals", impact: "High", effort: "Low", confidence: "High", priority: "P0" },
-  { initiative: "Improve public-reaction matching", impact: "Medium", effort: "Low", confidence: "Medium", priority: "P1" },
-  { initiative: "Expand source coverage", impact: "High", effort: "Medium", confidence: "Medium", priority: "P1" },
-  { initiative: "Personalization", impact: "High", effort: "High", confidence: "Low", priority: "P2" },
-  { initiative: "Historical story context", impact: "Medium", effort: "High", confidence: "Low", priority: "P2" },
-  { initiative: "Conversational news assistant", impact: "Medium", effort: "High", confidence: "Low", priority: "P2" },
+  { initiative: "Expand source-tier map", impact: "High", effort: "Low", confidence: "High", priority: "P0" },
+  { initiative: "Improve reader-reaction matching", impact: "High", effort: "Medium", confidence: "Medium", priority: "P0" },
+  { initiative: "Refine framing thresholds", impact: "Medium", effort: "Low", confidence: "Medium", priority: "P1" },
+  { initiative: "Keep historical editions", impact: "Medium", effort: "Medium", confidence: "High", priority: "P1" },
+  { initiative: "Extend editorial ranking", impact: "High", effort: "High", confidence: "Medium", priority: "P2" },
 ];
 
 // Extra framing for the decisions reused from the technical page, keyed by title.
@@ -570,6 +573,78 @@ export function SignalDeskCaseStudy() {
         </InView>
       </section>
 
+      {/* 06b — feature spec: Story Context (compact PRD) */}
+      <section>
+        <div className={PROSE}>
+          <SectionLabel label="Feature spec — Story Context" />
+          <InView>
+            <p className="leading-7 text-muted-foreground">
+              One representative feature as a compact spec — the reasoning that turns the product
+              thesis into something buildable.
+            </p>
+          </InView>
+        </div>
+        <InView delay={0.06}>
+          <Surface grid={false} className="mt-6 overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-black/25 px-4 py-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
+                PRD · {prd.feature}
+              </span>
+              <Tag>v0 · draft</Tag>
+            </div>
+            <div className="px-5 py-6">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                User story
+              </p>
+              <p className="mt-2 border-l-2 border-primary/40 pl-4 text-base leading-7 text-foreground">
+                {prd.userStory}
+              </p>
+
+              <div className="mt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Problem
+                  </p>
+                  <Hypothesis />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{prd.problem}</p>
+              </div>
+
+              <div className="mt-6 grid gap-x-8 gap-y-6 md:grid-cols-2">
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Requirements
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {prd.functional.map((f) => (
+                      <li key={f} className="flex gap-2.5 text-sm leading-6 text-foreground/90">
+                        <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-primary/60" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Non-goals
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {prd.nonGoals.map((g) => (
+                      <li key={g} className="flex gap-2.5 text-sm leading-6 text-muted-foreground">
+                        <span aria-hidden className="mt-0.5 shrink-0 font-mono text-xs text-muted-foreground/60">
+                          ✕
+                        </span>
+                        <span>{g}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Surface>
+        </InView>
+      </section>
+
       {/* 07 — before / after */}
       <section>
         <div className={PROSE}>
@@ -688,78 +763,6 @@ export function SignalDeskCaseStudy() {
             </InView>
           ))}
         </div>
-      </section>
-
-      {/* 10b — a compact PRD for one representative feature */}
-      <section>
-        <div className={PROSE}>
-          <SectionLabel label="Feature spec / PRD" />
-          <InView>
-            <p className="leading-7 text-muted-foreground">
-              One representative feature as a compact spec, rather than a full PRD — the reasoning that
-              turns the product thesis into something buildable.
-            </p>
-          </InView>
-        </div>
-        <InView delay={0.06}>
-          <Surface grid={false} className="mt-6 overflow-hidden">
-            <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-black/25 px-4 py-2.5">
-              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
-                PRD · {prd.feature}
-              </span>
-              <Tag>v0 · draft</Tag>
-            </div>
-            <div className="px-5 py-6">
-              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                User story
-              </p>
-              <p className="mt-2 border-l-2 border-primary/40 pl-4 text-base leading-7 text-foreground">
-                {prd.userStory}
-              </p>
-
-              <div className="mt-6">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Problem
-                  </p>
-                  <Hypothesis />
-                </div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{prd.problem}</p>
-              </div>
-
-              <div className="mt-6 grid gap-x-8 gap-y-6 md:grid-cols-2">
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Key requirements
-                  </p>
-                  <ul className="mt-3 space-y-2">
-                    {prd.functional.map((f) => (
-                      <li key={f} className="flex gap-2.5 text-sm leading-6 text-foreground/90">
-                        <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-primary/60" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                    Non-goals
-                  </p>
-                  <ul className="mt-3 space-y-2">
-                    {prd.nonGoals.map((g) => (
-                      <li key={g} className="flex gap-2.5 text-sm leading-6 text-muted-foreground">
-                        <span aria-hidden className="mt-0.5 shrink-0 font-mono text-xs text-muted-foreground/60">
-                          ✕
-                        </span>
-                        <span>{g}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </Surface>
-        </InView>
       </section>
 
       {/* 11 — simplified product + system architecture */}
@@ -1060,7 +1063,7 @@ export function SignalDeskCaseStudy() {
           <InView>
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <Tag>Impact × Effort × Confidence</Tag>
-              <Hypothesis text="current prioritization judgment · not validated" />
+              <Hypothesis text="current prioritization judgment — to be validated with user research and product data" />
             </div>
           </InView>
           <InView delay={0.04}>
