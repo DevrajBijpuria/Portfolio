@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight, Plus } from "lucide-react";
@@ -143,38 +144,45 @@ const systemLayers = [
   { layer: "Signal Desk experience", note: "The broadsheet a reader opens" },
 ];
 
-// Proposed success metrics. There is no analytics data behind these — each is a
-// KPI the product would be judged on, with why it matters, labelled proposed.
-const kpis = [
+// Metrics, as a hierarchy. There is no analytics data behind any of these — each
+// is a metric the product would be judged on, labelled proposed. Every entry
+// answers one question: what decision does this metric help us make?
+const northStar = {
+  name: "Meaningful news sessions",
+  definition:
+    "A session in which a reader meaningfully consumes a story and/or explores its context — not a bounce, not a headline skim.",
+  decision:
+    "Tells us whether the desk is doing its real job — helping people read and understand — rather than just earning clicks.",
+};
+
+const metricGroups = [
   {
-    name: "Story engagement",
-    metric: "Meaningful reading sessions / completion",
-    why: "Confirms the desk surfaces stories readers actually read, not just headlines they scroll past.",
+    group: "Primary product metrics",
+    items: [
+      { name: "Story engagement", decision: "Are readers actually reading, or scrolling past?" },
+      { name: "Context interaction rate", decision: "Do readers use the trust / context layer at all?" },
+      { name: "Stories explored per session", decision: "Is the desk broadening what a reader sees?" },
+      { name: "Reading completion", decision: "Are stories surfaced at the right depth and length?" },
+      { name: "Source comparison rate", decision: "Do readers value seeing many outlets on one story?" },
+    ],
   },
   {
-    name: "Discovery",
-    metric: "Stories explored per session",
-    why: "Measures whether the desk broadens what a reader sees beyond a single outlet.",
+    group: "Trust & quality metrics",
+    items: [
+      { name: "Credibility-signal interaction", decision: "Is the legitimacy signal noticed and used?" },
+      { name: "Source inspection rate", decision: "Do readers open the underlying sources when offered?" },
+      { name: "User-reported trust", decision: "Does the desk make readers feel more confident? (survey)" },
+      { name: "Duplicate-story rate", decision: "Is the deduplication layer keeping the edition clean?" },
+    ],
   },
   {
-    name: "Context usage",
-    metric: "% of readers interacting with source / credibility info",
-    why: "Tests the central hypothesis — that readers want trust context, not only the headline.",
-  },
-  {
-    name: "Trust",
-    metric: "Credibility-signal interaction rate",
-    why: "Shows whether the legitimacy signal is noticed and used, or ignored as furniture.",
-  },
-  {
-    name: "Retention",
-    metric: "Returning readers / repeat sessions",
-    why: "The desk only earns a habit if it stays useful past the first visit.",
-  },
-  {
-    name: "Quality",
-    metric: "Duplicate-story rate",
-    why: "A health metric for the deduplication layer — the same event should appear once.",
+    group: "Guardrail metrics",
+    items: [
+      { name: "Misleading-story reports", decision: "Is scoring ever surfacing something it should not trust?" },
+      { name: "Sentiment misinterpretation", decision: "Are readers mistaking public reaction for fact?" },
+      { name: "Bounce rate", decision: "Is the front page failing to earn a first read?" },
+      { name: "Low-quality source engagement", decision: "Is attention drifting to low-tier sources?" },
+    ],
   },
 ];
 
@@ -195,6 +203,148 @@ const experiments = [
     hypothesis: "The importance formula changes which stories readers open first.",
     test: "Vary the inputs to the render-time ranking; read against discovery and story engagement.",
   },
+];
+
+// ---- user research & validation (planned, not conducted) ----
+const researchObjectives = [
+  "Discovering relevant news across beats",
+  "Evaluating whether a source is credible",
+  "Handling duplicate coverage of one event",
+  "Understanding how differently outlets cover the same story",
+  "Reading and interpreting public reaction",
+  "Switching between platforms to build enough context to trust a story",
+];
+
+const interviewQuestions = [
+  "How do you usually discover news?",
+  "How many sources do you check for an important story?",
+  "How do you decide whether a source is trustworthy?",
+  "Do you ever compare multiple articles about the same story?",
+  "Do you look at social-media reactions to a story?",
+  "What makes you distrust a news story?",
+  "What information would make you feel more confident about a story?",
+];
+
+// HYPOTHESIS → RESEARCH QUESTION → EVIDENCE → DECISION. Evidence and decision are
+// deliberately unfilled: the point is that decisions move once evidence exists.
+const validationRows = [
+  {
+    hypothesis: "Readers cross-check several sources to judge trust.",
+    question: "How many sources do you check, and why?",
+  },
+  {
+    hypothesis: "Credibility is hard to assess from a headline alone.",
+    question: "How do you decide a source is trustworthy?",
+  },
+  {
+    hypothesis: "Duplicate coverage adds friction, not value.",
+    question: "Do repeated versions of a story help or annoy you?",
+  },
+  {
+    hypothesis: "Public reaction is context readers want — but not proof.",
+    question: "Do you read reactions, and do they change your view?",
+  },
+];
+
+// ---- a compact PRD for one representative feature ----
+const prd = {
+  feature: "Story Context",
+  userStory:
+    "As a reader, I want to understand the credibility and broader context of a story without leaving the article, so that I can make a more informed judgment.",
+  problem:
+    "To evaluate a story today, a reader may have to switch between several sources and social platforms. (Product hypothesis — to be validated by research.)",
+  functional: [
+    "Display a source-credibility signal on the story.",
+    "Explain why that credibility signal was assigned.",
+    "Show corroborating coverage from other outlets.",
+    "Surface relevant context alongside the story.",
+    "Show public sentiment separately from credibility.",
+    "Let the reader inspect the underlying sources.",
+  ],
+  nonGoals: [
+    "Decide whether a story is absolutely true.",
+    "Use public sentiment as proof of factual accuracy.",
+    "Combine credibility and sentiment into one score.",
+    "Hide source-level information behind an opaque AI score.",
+  ],
+  acceptance: [
+    "Understandable without technical knowledge.",
+    "Lets the reader inspect the supporting sources.",
+    "Clearly distinguishes factual reporting from public opinion.",
+    "Never presents sentiment as evidence.",
+    "Preserves the reader's control over what to trust.",
+  ],
+};
+
+// ---- prioritization: Impact × Effort. Current product judgment, not validated. ----
+const priorityQuadrants = [
+  {
+    impact: "High impact",
+    effort: "Low effort",
+    heading: "Do first",
+    accent: true,
+    items: ["Improve credibility signals", "Improve public-reaction matching"],
+  },
+  {
+    impact: "High impact",
+    effort: "High effort",
+    heading: "Plan & scope",
+    accent: false,
+    items: ["Expand source coverage", "Personalization"],
+  },
+  {
+    impact: "Lower impact",
+    effort: "Low effort",
+    heading: "Fill-ins",
+    accent: false,
+    items: [],
+  },
+  {
+    impact: "Lower impact",
+    effort: "High effort",
+    heading: "Defer",
+    accent: false,
+    items: ["Historical story context", "Conversational news assistant"],
+  },
+];
+
+// Extra framing for the decisions reused from the technical page, keyed by title.
+// problem/options are honest reconstructions of the real choice — no new facts;
+// decision/reason/tradeoff still come from the shared signalDesk source.
+const decisionFraming: Record<string, { problem: string; options: string[] }> = {
+  "Why rules instead of an LLM": {
+    problem: "The credibility judgment has to be something a reader can trust, question, and get the same answer from twice.",
+    options: ["An LLM that scores each story", "A rule-based source-tier map with a written reason"],
+  },
+  "Why Netlify Blobs": {
+    problem: "The processed edition has to persist between the scheduled sweep and the reader.",
+    options: ["Run a hosted database", "Store one JSON edition as a single blob"],
+  },
+  "Why a static frontend": {
+    problem: "A page load must never depend on fetching thirty live news feeds.",
+    options: ["Fetch and process on every request", "Serve a pre-processed, edge-cached edition"],
+  },
+  "Why legitimacy and framing are separate": {
+    problem: "Trust and tone both describe a story, and the tempting move is to average them into one number.",
+    options: ["One blended credibility + tone score", "Two independent axes that never mix"],
+  },
+  "Why every credential is optional": {
+    problem: "The desk has to work as a news system even with no paid API keys present.",
+    options: ["Require keys for the optional layers", "Degrade each optional layer to nothing when unset"],
+  },
+};
+
+// ---- transferable product thinking ----
+const transferableSkills = [
+  "Discovery",
+  "Ranking",
+  "Information quality",
+  "Trust signals",
+  "User context",
+  "Personalization concepts",
+  "Experimentation",
+  "Product metrics",
+  "Trade-offs",
 ];
 
 export function SignalDeskCaseStudy() {
@@ -321,6 +471,119 @@ export function SignalDeskCaseStudy() {
             </InView>
           ))}
         </ul>
+      </section>
+
+      {/* 05b — user research & validation (planned, honest) */}
+      <section>
+        <div className={PROSE}>
+          <SectionLabel label="User research & validation" />
+          <InView>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Tag>Research status</Tag>
+              <Hypothesis text="research plan" />
+            </div>
+          </InView>
+          <InView delay={0.04}>
+            <p className="leading-7 text-foreground">
+              Formal user research has not yet been conducted. The plan below is designed to validate
+              the product hypotheses on this page before they are treated as product assumptions.
+            </p>
+          </InView>
+        </div>
+
+        <div className={`${PROSE} mt-8`}>
+          <InView>
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Research objectives
+            </p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Validate whether readers actually struggle with:
+            </p>
+          </InView>
+          <ul className="mt-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+            {researchObjectives.map((o, i) => (
+              <InView key={o} delay={i * 0.03}>
+                <li className="flex items-baseline gap-2 text-sm leading-6 text-muted-foreground">
+                  <span className="text-primary">•</span>
+                  {o}
+                </li>
+              </InView>
+            ))}
+          </ul>
+        </div>
+
+        <InView delay={0.06}>
+          <div className="mt-6 grid gap-3 md:grid-cols-[240px_1fr]">
+            <Surface className="px-5 py-5">
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Participants
+                </span>
+                <Hypothesis text="proposed sample" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">10–15</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                regular digital-news consumers
+              </p>
+            </Surface>
+            <Surface className="px-5 py-5">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                Interview questions
+              </span>
+              <ol className="mt-3 space-y-1.5">
+                {interviewQuestions.map((q, i) => (
+                  <li key={q} className="flex gap-3 text-sm leading-6 text-muted-foreground">
+                    <span className="font-mono text-[11px] text-primary/70">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span>{q}</span>
+                  </li>
+                ))}
+              </ol>
+            </Surface>
+          </div>
+        </InView>
+
+        <div className={`${PROSE} mt-8`}>
+          <InView>
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Validation framework
+            </p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Each hypothesis moves to a decision only once evidence exists — so the product changes
+              with the research, not around it.
+            </p>
+          </InView>
+        </div>
+        <InView delay={0.06}>
+          <Surface grid={false} className="mt-4">
+            <div className="hidden grid-cols-[1.4fr_1.2fr_0.8fr_0.9fr] gap-4 border-b border-border/70 px-4 py-2.5 md:grid">
+              {["Hypothesis", "Research question", "Evidence", "Decision"].map((h) => (
+                <Tag key={h}>{h}</Tag>
+              ))}
+            </div>
+            {validationRows.map((r, i) => (
+              <div
+                key={r.hypothesis}
+                className={`grid gap-2 px-4 py-3.5 md:grid-cols-[1.4fr_1.2fr_0.8fr_0.9fr] md:gap-4 ${
+                  i > 0 ? "border-t border-border/40" : ""
+                }`}
+              >
+                <p className="text-sm leading-6 text-foreground">{r.hypothesis}</p>
+                <p className="text-sm leading-6 text-muted-foreground">{r.question}</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground/70">
+                  To be gathered
+                </p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-primary/70">
+                  Keep / revise / drop
+                </p>
+              </div>
+            ))}
+          </Surface>
+        </InView>
+        <div className={`${PROSE} mt-6`}>
+          <Annotation rotate={-1}>a hypothesis is not a finding until the research says so.</Annotation>
+        </div>
       </section>
 
       {/* 06 — product insight */}
@@ -466,6 +729,94 @@ export function SignalDeskCaseStudy() {
         </div>
       </section>
 
+      {/* 10b — a compact PRD for one representative feature */}
+      <section>
+        <div className={PROSE}>
+          <SectionLabel label="Product requirements" />
+          <InView>
+            <p className="leading-7 text-muted-foreground">
+              One representative feature as a compact PRD, rather than a full spec — the reasoning that
+              turns the product thesis into something buildable.
+            </p>
+          </InView>
+        </div>
+        <InView delay={0.06}>
+          <Surface grid={false} className="mt-6 overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-black/25 px-4 py-2.5">
+              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
+                PRD · {prd.feature}
+              </span>
+              <Tag>v0 · draft</Tag>
+            </div>
+            <div className="px-5 py-6">
+              <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                User story
+              </p>
+              <p className="mt-2 border-l-2 border-primary/40 pl-4 text-base leading-7 text-foreground">
+                {prd.userStory}
+              </p>
+
+              <div className="mt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Problem
+                  </p>
+                  <Hypothesis />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{prd.problem}</p>
+              </div>
+
+              <div className="mt-6 grid gap-x-8 gap-y-6 md:grid-cols-2">
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Functional requirements
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {prd.functional.map((f) => (
+                      <li key={f} className="flex gap-2.5 text-sm leading-6 text-foreground/90">
+                        <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-primary/60" />
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Non-goals
+                  </p>
+                  <ul className="mt-3 space-y-2">
+                    {prd.nonGoals.map((g) => (
+                      <li key={g} className="flex gap-2.5 text-sm leading-6 text-muted-foreground">
+                        <span aria-hidden className="mt-0.5 shrink-0 font-mono text-xs text-muted-foreground/60">
+                          ✕
+                        </span>
+                        <span>{g}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-6 border-t border-border/60 pt-5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Acceptance criteria
+                </p>
+                <ul className="mt-3 grid gap-x-8 gap-y-2 sm:grid-cols-2">
+                  {prd.acceptance.map((a) => (
+                    <li key={a} className="flex gap-2.5 text-sm leading-6 text-muted-foreground">
+                      <span aria-hidden className="mt-0.5 shrink-0 font-mono text-xs text-primary/70">
+                        ✓
+                      </span>
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </Surface>
+        </InView>
+      </section>
+
       {/* 11 — simplified product + system architecture */}
       <section>
         <div className={PROSE}>
@@ -513,75 +864,161 @@ export function SignalDeskCaseStudy() {
         <SectionLabel label="Product decisions" />
         <InView>
           <p className="leading-7 text-muted-foreground">
-            The decisions that shaped the product — each with what it cost. These are the same
-            engineering decisions as the technical page, read here for their product reasoning.
+            The decisions that shaped the product — each read as problem, options weighed, decision,
+            why, and what it cost. These are the same choices as the technical page, framed here for
+            their product reasoning. Expand any one.
           </p>
         </InView>
         <div className="mt-6 space-y-2">
-          {signalDesk.decisions?.map((d) => (
-            <InView key={d.title}>
-              <details className="group rounded-md border border-border bg-card/40 open:bg-card/60">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
-                    {d.title}
-                  </span>
-                  <Plus className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45" />
-                </summary>
-                <div className="border-t border-border px-4 py-4">
-                  <p className="leading-6 text-foreground">{d.decision}</p>
-                  <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{d.reason}</p>
-                  {d.tradeoff && (
-                    <p className="mt-3 border-l border-border pl-3 text-sm leading-6 text-muted-foreground">
-                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80">
-                        Trade-off
-                      </span>
-                      <br />
-                      {d.tradeoff}
-                    </p>
-                  )}
-                </div>
-              </details>
-            </InView>
-          ))}
+          {signalDesk.decisions?.map((d) => {
+            const framing = decisionFraming[d.title];
+            return (
+              <InView key={d.title}>
+                <details className="group rounded-md border border-border bg-card/40 open:bg-card/60">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
+                      {d.title}
+                    </span>
+                    <Plus className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45" />
+                  </summary>
+                  <div className="space-y-4 border-t border-border px-4 py-4">
+                    {framing && (
+                      <>
+                        <DecisionField label="Problem">
+                          <span className="text-muted-foreground">{framing.problem}</span>
+                        </DecisionField>
+                        <DecisionField label="Options weighed">
+                          <span className="flex flex-wrap gap-2">
+                            {framing.options.map((o, i) => {
+                              const chosen = i === framing.options.length - 1;
+                              return (
+                                <span
+                                  key={o}
+                                  className={`rounded-[3px] border px-2 py-1 font-mono text-[11px] ${
+                                    chosen
+                                      ? "border-primary/50 text-primary"
+                                      : "border-border/70 text-muted-foreground/70 line-through decoration-muted-foreground/40"
+                                  }`}
+                                >
+                                  {o}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        </DecisionField>
+                      </>
+                    )}
+                    <DecisionField label="Decision">
+                      <span className="text-foreground">{d.decision}</span>
+                    </DecisionField>
+                    <DecisionField label="Why">
+                      <span className="text-muted-foreground">{d.reason}</span>
+                    </DecisionField>
+                    {d.tradeoff && (
+                      <DecisionField label="Trade-off">
+                        <span className="block border-l border-border pl-3 text-muted-foreground">
+                          {d.tradeoff}
+                        </span>
+                      </DecisionField>
+                    )}
+                  </div>
+                </details>
+              </InView>
+            );
+          })}
         </div>
       </section>
 
-      {/* 13 — metrics */}
+      {/* 13 — metrics, as a hierarchy */}
       <section>
         <div className={PROSE}>
           <SectionLabel label="How success would be measured" />
           <InView>
             <div className="flex flex-wrap items-center gap-2">
-              <Tag>Proposed KPIs</Tag>
+              <Tag>Metric hierarchy</Tag>
               <Hypothesis text="no analytics data yet" />
             </div>
           </InView>
           <InView delay={0.05}>
             <p className="mt-3 leading-7 text-muted-foreground">
-              The project publishes no usage figures, so there are no results to report. These are the
-              metrics the product would be judged on, and why each one matters.
+              The project publishes no usage figures, so there are no results to report — only the
+              metrics the product would be judged on, arranged from the one that matters most down to
+              the guardrails that keep it honest. Each answers one question: what decision does it help
+              us make?
             </p>
           </InView>
         </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {kpis.map((k, i) => (
-            <InView key={k.name} delay={(i % 3) * 0.05}>
-              <Surface className="h-full px-5 py-5">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                    {k.name}
-                  </span>
-                  <span className="rounded-[3px] border border-primary/40 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-primary/80">
-                    Proposed
-                  </span>
-                </div>
-                <p className="mt-2 text-sm font-medium leading-snug text-foreground">{k.metric}</p>
-                <p className="mt-3 border-t border-border/50 pt-3 text-xs leading-5 text-muted-foreground">
-                  {k.why}
+
+        {/* north star */}
+        <InView delay={0.06}>
+          <Surface className="mt-6 px-6 py-7">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">
+                North star metric
+              </span>
+              <span className="rounded-[3px] border border-primary/40 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-primary/80">
+                Proposed
+              </span>
+            </div>
+            <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+              {northStar.name}
+            </p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              {northStar.definition}
+            </p>
+            <p className="mt-4 border-t border-border/50 pt-3 text-sm leading-6 text-foreground/90">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                Decision it drives —{" "}
+              </span>
+              {northStar.decision}
+            </p>
+          </Surface>
+        </InView>
+
+        {/* supporting tiers */}
+        <div className="mt-8 space-y-8">
+          {metricGroups.map((g) => (
+            <div key={g.group}>
+              <InView>
+                <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                  {g.group}
                 </p>
-              </Surface>
-            </InView>
+              </InView>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {g.items.map((m, i) => (
+                  <InView key={m.name} delay={(i % 3) * 0.04}>
+                    <Surface className="h-full px-5 py-5">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-foreground">
+                          {m.name}
+                        </span>
+                        <span className="rounded-[3px] border border-primary/30 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-primary/70">
+                          Proposed
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground/80">
+                          Helps decide —{" "}
+                        </span>
+                        {m.decision}
+                      </p>
+                    </Surface>
+                  </InView>
+                ))}
+              </div>
+            </div>
           ))}
+        </div>
+
+        <div className={`${PROSE} mt-6`}>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Labels stay honest: everything here is <span className="text-primary/80">Proposed</span> or
+            a hypothesis. An{" "}
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-foreground">
+              Actual result
+            </span>{" "}
+            label would appear only once real usage data exists.
+          </p>
         </div>
       </section>
 
@@ -671,6 +1108,94 @@ export function SignalDeskCaseStudy() {
         </section>
       )}
 
+      {/* 16b — prioritization (Impact × Effort) */}
+      <section>
+        <div className={PROSE}>
+          <SectionLabel label="Prioritization" />
+          <InView>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Tag>Impact × Effort</Tag>
+              <Hypothesis text="current prioritization hypothesis" />
+            </div>
+          </InView>
+          <InView delay={0.04}>
+            <p className="leading-7 text-muted-foreground">
+              Product management is not just generating features — it is choosing which ones earn the
+              next unit of effort. This is current product judgment, not a user-validated ranking.
+            </p>
+          </InView>
+        </div>
+
+        <InView delay={0.06}>
+          <div className="mt-6">
+            {/* axes + 2x2 matrix */}
+            <div className="grid grid-cols-[auto_1fr] gap-3">
+              <div className="flex items-center">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground [writing-mode:vertical-rl] rotate-180">
+                  Impact →
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {priorityQuadrants.map((q) => (
+                  <Surface
+                    key={q.heading}
+                    className={`min-h-[9rem] px-4 py-5 sm:px-5 ${q.accent ? "border-primary/40" : ""}`}
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`font-mono text-[10px] uppercase tracking-[0.16em] ${
+                          q.accent ? "text-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        {q.heading}
+                      </span>
+                      <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-muted-foreground/60">
+                        {q.impact} · {q.effort}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {q.items.length > 0 ? (
+                        q.items.map((it) => (
+                          <span
+                            key={it}
+                            className={`rounded-[3px] border px-2 py-1 text-xs leading-5 ${
+                              q.accent
+                                ? "border-primary/40 text-foreground"
+                                : "border-border/70 text-muted-foreground"
+                            }`}
+                          >
+                            {it}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="font-mono text-[11px] text-muted-foreground/40">—</span>
+                      )}
+                    </div>
+                  </Surface>
+                ))}
+              </div>
+              <div />
+              <div className="text-right">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Effort →
+                </span>
+              </div>
+            </div>
+          </div>
+        </InView>
+
+        <div className={`${PROSE} mt-6`}>
+          <InView>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Credibility and context improvements come first: they sit directly on Signal Desk&rsquo;s
+              core thesis — helping a reader judge a story — while needing far less scope than full
+              personalization or a conversational assistant. This ranking would be revised after user
+              research and usage data.
+            </p>
+          </InView>
+        </div>
+      </section>
+
       {/* 17 — roadmap (real "what I would improve") */}
       <section className={PROSE}>
         <SectionLabel label="Roadmap" />
@@ -715,6 +1240,34 @@ export function SignalDeskCaseStudy() {
         </section>
       )}
 
+      {/* 18b — transferable product thinking */}
+      <section className={PROSE}>
+        <SectionLabel label="Product thinking beyond Signal Desk" />
+        <InView>
+          <p className="leading-7 text-muted-foreground">
+            Building this developed product experience that is not specific to news:
+          </p>
+        </InView>
+        <InView delay={0.05}>
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {transferableSkills.map((s) => (
+              <span
+                key={s}
+                className="rounded-[3px] border border-border/70 px-2 py-1 font-mono text-[11px] text-muted-foreground"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        </InView>
+        <InView delay={0.1}>
+          <p className="mt-6 border-l-2 border-primary/40 pl-4 text-lg leading-8 text-foreground">
+            The same product principles apply across domains: helping users navigate large information
+            spaces, evaluate alternatives, reduce decision friction, and make more confident decisions.
+          </p>
+        </InView>
+      </section>
+
       {/* 19 — CTA */}
       <section className={PROSE}>
         <SectionLabel label="Where to go next" />
@@ -753,6 +1306,17 @@ function Hypothesis({ text = "not validated" }: { text?: string }) {
     <span className="inline-flex items-center rounded-[3px] border border-primary/40 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em] text-primary/80">
       {text}
     </span>
+  );
+}
+
+// One labelled step inside an expanded product decision (problem / options /
+// decision / why / trade-off).
+function DecisionField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+      <div className="mt-1 text-sm leading-6">{children}</div>
+    </div>
   );
 }
 

@@ -423,7 +423,7 @@ export function CaseStudy({
               href={project.caseStudy}
               className="group inline-flex items-center gap-2 rounded-md border border-border px-4 py-3 text-sm transition-colors hover:bg-accent"
             >
-              Read the full case study
+              View product case study
               <ArrowRight className="size-4 -translate-x-1 opacity-60 transition-transform group-hover:translate-x-0" />
             </Link>
           )}
